@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Run the test classes that have changed since a given git revision.
+
+test $# -lt 1 && echo "Usage `basename $0` <git revision>" && exit 1
+
+TESTS=`git diff --name-only $1 | egrep -o "Test(.*).java" | cut -d "." -f 1 | paste -sd ,`
+echo "Testing $TESTS"
+mvn -o -fae test -Dtest=$TESTS

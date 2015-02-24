@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Fully-expand $CLASSPATH.
+# This is useful when you can't depend on shell glob expansion,
+# e.g. when running libhdfs.
+
+# Split $CLASSPATH on colons
+IFS=":"
+TEMP_PATH=($CLASSPATH)
+unset IFS
+
+# Find each file in each directory, add it to the OUT_PATH.
+OUT_PATH=
+for x in ${TEMP_PATH[@]}; do
+    ADD=`find $x -noleaf -type f -printf "%p:"`
+    OUT_PATH=${OUT_PATH}${ADD}
+done
+
+# Print the expanded classpath
+echo -n "CLASSPATH="
+echo $OUT_PATH

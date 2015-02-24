@@ -1,0 +1,107 @@
+#!/bin/bash
+
+#set -x
+
+NAME=`basename $0`
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+function quit {
+    mplayer -ao pulse $DIR/sounds/New.wav > /dev/null < /dev/null 2>&1 &
+    exit $rc
+}
+
+function success {
+    mplayer -ao pulse $DIR/sounds/Off.wav > /dev/null < /dev/null 2>&1 &
+    exit 0
+}
+
+function maven_compile_root {
+    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip || quit
+}
+
+function maven_compile {
+    test $# -lt 1 && echo "Runtime error: need argument!" && exit 1
+    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip -pl $1 -am || quit
+}
+
+function maven_eclipse {
+    test $# -lt 1 && echo "Runtime error: need argument!" && exit 1
+    if [ -n "$CLEAN" ]; then
+        mvn eclipse:clean -pl $1 -am || quit
+    fi
+    mvn generate-sources generate-test-sources eclipse:eclipse -pl $1 -am || quit
+}
+
+#test $# -lt 1 && echo "Usage $NAME hadoop_repo" && exit 1
+
+# Try to auto-detect the project root directory
+
+declare -a SUBMODULES=(hadoop-hdfs-project hadoop-common-project hadoop-mapreduce-project hadoop-yarn-project)
+DETECT=false
+while ! $DETECT; do
+    cwd=`pwd`
+    if [ "$cwd" == "/" ]; then
+        echo "Could not auto-detect project root!"
+        quit
+    fi
+    DETECT=true
+    listing=`ls`
+    for module in ${SUBMODULES[@]}; do
+        contains_modules=`echo $listing | grep -o $module`
+        if [ -z "$contains_modules" ]; then
+            DETECT=false
+            break
+        fi
+    done
+    # Didn't detect project root, go up one dir
+    if [ "$DETECT" == "false" ]; then
+        cd ..
+    fi
+done
+
+echo "Autodetected project root directory" `pwd`
+
+# Check if a clean or native build was requested
+
+CLEAN=
+NATIVE=
+OFFLINE=
+while getopts ":cno" opt; do
+    case $opt in
+        c)
+            echo "Doing a clean build" >&2
+            CLEAN="clean"
+            ;;
+        n)
+            echo "Doing a native build" >&2
+            NATIVE="-Pnative"
+            ;;
+        o)
+            echo "Doing an offline build" >&2
+            OFFLINE="-o"
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if   [ "$NAME" == "bhall" ]; then
+    maven_compile_root
+elif [ "$NAME" == "bhc" ]; then
+    maven_compile hadoop-common-project/hadoop-common
+elif [ "$NAME" == "bhdfs" ]; then
+    maven_compile hadoop-hdfs-project/hadoop-hdfs
+elif [ "$NAME" == "beclipse" ]; then
+    # Trunk requires the maven plugins to build eclipse:eclipse
+    if [ -d "hadoop-maven-plugins" ]; then
+        maven_compile hadoop-maven-plugins
+    fi
+
+    maven_eclipse hadoop-hdfs-project/hadoop-hdfs
+
+    #maven_eclipse hadoop-common-project/hadoop-annotations
+    #maven_eclipse hadoop-common-project/hadoop-auth
+    #maven_eclipse hadoop-common-project/hadoop-common
+    #maven_eclipse hadoop-hdfs-project/hadoop-hdfs
+fi
+
+success

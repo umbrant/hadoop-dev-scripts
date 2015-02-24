@@ -1,0 +1,76 @@
+#!/bin/zsh
+
+#set -x
+
+BASENAME=`basename $0`
+
+function usage() {
+    echo "Usage: $BASENAME <file with one JIRA per line> <output file>"
+    echo
+    echo "Run this from within the git repo containing the desired JIRAs."
+    echo "Writes a list of hashes suitable for pick_hashes to the output_file."
+    exit 1
+}
+
+test $# -lt 2 && usage $0
+
+NEEDED=$1
+shift
+OUTPUT=$1
+shift
+
+cat $NEEDED | sort -u > /tmp/needed_sorted
+NUM_NEEDED=`wc -l /tmp/needed_sorted | cut -d " " -f 1`
+echo  "Number needed: " $NUM_NEEDED
+
+cat /tmp/needed_sorted | tr "\n" "|" | sed 's/|$//' > /tmp/needed_pattern
+PATTERN="(`cat /tmp/needed_pattern`)"
+git log --pretty=oneline | egrep "$PATTERN" > /tmp/needed_commits
+
+NUM_COMMITS=`wc -l /tmp/needed_commits | cut -d " " -f 1`
+echo "Number commits: " $NUM_COMMITS
+
+FILTER=( "HDFS-2976. Merging change r1609849 from trunk" "HDFS-3851. Merging change r1609858 from trunk to branch-2." )
+
+echo
+for f in $FILTER; do
+    echo "Filtering out: \"$f\""
+    sed -i "/${f}/d" /tmp/needed_commits
+done
+echo
+
+NUM_COMMITS=`wc -l /tmp/needed_commits | cut -d " " -f 1`
+echo "Number commits after filtering: " $NUM_COMMITS
+echo
+
+# Alert if any are missing
+NUM_UNIQUE=`egrep -o "(HADOOP|HDFS)-[0-9]+" /tmp/needed_commits | sort -u | wc -l`
+if [[ $NUM_NEEDED -gt $NUM_UNIQUE ]]; then
+    echo "Some requested JIRAs are missing: "
+    for jira in `cat /tmp/needed_sorted`; do
+        empty=`grep $jira /tmp/needed_commits`
+        if [[ $empty == "" ]]; then
+            echo "  " $jira
+        fi
+    done
+    echo
+fi
+
+# If we have too many, say something
+egrep -o "(HADOOOP|HDFS)-[0-9]+" /tmp/needed_commits | sort | uniq -d > /tmp/dups
+NUM_DUPS=`wc -l /tmp/dups | cut -d " " -f 1`
+if [[ $NUM_DUPS -ne 0 ]]; then
+    echo "Found multiple commits for same JIRA:"
+    for dup in `cat /tmp/dups`; do
+        echo
+        echo $dup
+        grep $dup /tmp/needed_commits
+        echo
+    done
+fi
+
+# Reverse it so the oldest commit is first
+tac /tmp/needed_commits | cut -d " " -f 1 > $OUTPUT
+
+echo "Done."
+
