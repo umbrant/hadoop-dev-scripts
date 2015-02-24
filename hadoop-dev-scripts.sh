@@ -6,11 +6,9 @@
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
 # Set up the PATH relative to the base DIR
-echo $PATH
 export PATH=$PATH:$DIR/
 export PATH=$PATH:$DIR/git/
 export PATH=$PATH:$DIR/build-and-run/
 export PATH=$PATH:$DIR/tests/
-echo $PATH
 
 unset DIR
