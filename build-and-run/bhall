@@ -41,7 +41,7 @@ DETECT=false
 while ! $DETECT; do
     cwd=`pwd`
     if [ "$cwd" == "/" ]; then
-        echo "Could not auto-detect project root!"
+        echo "Could not auto-detect project root, is $cwd within a checkout of the Hadoop repo?"
         quit
     fi
     DETECT=true
