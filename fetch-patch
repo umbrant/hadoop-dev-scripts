@@ -20,8 +20,15 @@ root = ET.fromstring(search_result)
 
 # Find the newest attachment based on ID (monotonically increasing)
 max_id = -1
-root.find("rss")
-for attachment in root.find("channel").find("item").find("attachments").findall("attachment"):
+
+drilldown = root
+for drill in ["channel", "item", "attachments"]:
+    drilldown = drilldown.find(drill)
+    if drilldown is None:
+        print "No attachments for %s, is it a valid JIRA?" % args.jira_number
+        sys.exit(1)
+
+for attachment in attachments.findall("attachment"):
     aid = int(attachment.get("id"))
     max_id = max(aid, max_id)
 
