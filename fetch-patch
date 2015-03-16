@@ -28,7 +28,7 @@ for drill in ["channel", "item", "attachments"]:
         print "No attachments for %s, is it a valid JIRA?" % args.jira_number
         sys.exit(1)
 
-for attachment in attachments.findall("attachment"):
+for attachment in drilldown.findall("attachment"):
     aid = int(attachment.get("id"))
     max_id = max(aid, max_id)
 
