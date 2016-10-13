@@ -2,29 +2,25 @@
 
 test $# -lt 1 && echo "Usage `basename $0` testSpec" && echo && echo "Runs a potentially flaky test in a loop until it fails." && exit 1
 
-#killall burnP6 > /dev/null 2>&1
-#for x in {1..4}; do
-#    burnP6 &
-#done
-
-count=10
+count=100
 
 OUTFILE=/tmp/flakytest
 OUTDIR=/tmp/flakytest.out
 
-for x in {1..$count}; do
+for x in $(seq $count); do
     echo "Doing run $x..."
     # Run the test
     mvn test -Dtest=$1 > $OUTFILE 2>&1
     greptest=`egrep "Failures: [1-9][0-9]*" $OUTFILE`
     # Found a failure
-    if [ -n "$greptest" ]; then
-        echo "Test failed!"
+    if [[ -n "$greptest" ]]; then
+        echo "Test failed, archiving output to $OUTDIR"
         mkdir -p $OUTDIR
         cp target/surefire-reports/*-output.txt $OUTDIR
         #killall burnP6 > /dev/null 2>&1
-        exit
+        exit 1
     fi
 done
 
-#killall burnP6 > /dev/null 2>&1
+echo "Ran $count times without failure"
+exit 0
