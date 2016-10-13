@@ -29,11 +29,13 @@ for drill in ["channel", "item", "attachments"]:
         sys.exit(1)
 
 for attachment in drilldown.findall("attachment"):
-    aid = int(attachment.get("id"))
-    max_id = max(aid, max_id)
+    name = attachment.get("name")
+    if name.endswith(".patch") or name.endswith(".txt"):
+        aid = int(attachment.get("id"))
+        max_id = max(aid, max_id)
 
 if max_id == -1:
-    print "No attachments found!"
+    print "No patch attachments found!"
     sys.exit(1)
 
 f = urllib2.urlopen("https://issues.apache.org/jira/rest/api/2/attachment/%s" % max_id)
