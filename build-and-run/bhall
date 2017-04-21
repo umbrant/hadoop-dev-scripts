@@ -16,12 +16,12 @@ function success {
 }
 
 function maven_compile_root {
-    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip || quit
+    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip -DskipShade || quit
 }
 
 function maven_compile {
     test $# -lt 1 && echo "Runtime error: need argument!" && exit 1
-    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip -pl $1 -am || quit
+    mvn $OFFLINE $CLEAN package install -Pdist $NATIVE -DskipTests -Dmaven.javadoc.skip -DskipShade -pl $1 -am || quit
 }
 
 function maven_eclipse {

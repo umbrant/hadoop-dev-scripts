@@ -8,7 +8,7 @@ function usage() {
     echo "Usage: $BASENAME <file with one JIRA per line> <output file>"
     echo
     echo "Run this from within the git repo containing the desired JIRAs."
-    echo "Writes a list of hashes suitable for pick_hashes to the output_file."
+    echo "Writes a list of hashes suitable for pick-hashes to the output_file."
     exit 1
 }
 
